@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "cron": "node scripts/cron-contentful.mjs",
-    "add": "node scripts/cron-contentful.mjs add"
+    "add": "node scripts/cron-contentful.mjs add",
+    "read": "node scripts/cron-contentful.mjs read",
+    "update": "node scripts/cron-contentful.mjs update",
+    "delete": "node scripts/cron-contentful.mjs delete"
   },
   "engines": {
     "node": ">=20"

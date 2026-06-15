@@ -21,10 +21,33 @@ console.log(
 if (action === "start") {
   console.log("Daily 05:05 start check completed. No Contentful entry was changed.");
 } else if (action === "add") {
+  // 奇數小時 :33 新增一筆資料
   const entry = await createCronContentfulEntry(now, localParts);
   await publishEntry(entry);
   console.log(`Created and published ${CONTENT_TYPE} entry: ${entry.sys.id}`);
+} else if (action === "read") {
+  // 奇數小時 :37 讀取一筆資料
+  const entry = await readLatestCronContentfulEntry();
+  if (!entry) {
+    console.log(`No ${CONTENT_TYPE} entries found. Nothing to read.`);
+  } else {
+    console.log(`Read latest ${CONTENT_TYPE} entry: ${entry.sys.id}`);
+    console.log(`  name: ${entry.fields?.name?.[locale]}`);
+    console.log(`  lastRunAt: ${entry.fields?.lastRunAt?.[locale]}`);
+    console.log(`  lastStatus: ${entry.fields?.lastStatus?.[locale]}`);
+  }
+} else if (action === "update") {
+  // 偶數小時 :33 更新一筆資料
+  const entry = await findLatestCronContentfulEntry();
+  if (!entry) {
+    console.log(`No ${CONTENT_TYPE} entries found. Nothing to update.`);
+  } else {
+    const updated = await updateCronContentfulEntry(entry, now, localParts);
+    await publishEntry(updated);
+    console.log(`Updated and published ${CONTENT_TYPE} entry: ${updated.sys.id}`);
+  }
 } else if (action === "delete") {
+  // 偶數小時 :37 刪除一筆資料
   const entry = await findCronContentfulEntryToDelete(deleteTarget);
 
   if (!entry) {
@@ -38,20 +61,26 @@ if (action === "start") {
 }
 
 function resolveAction(value, parts) {
-  if (["add", "delete", "start"].includes(value)) {
+  if (["add", "read", "update", "delete", "start"].includes(value)) {
     return value;
   }
 
   if (value !== "auto") {
-    throw new Error("CRON_ACTION must be auto, start, add, or delete.");
+    throw new Error("CRON_ACTION must be auto, start, add, read, update, or delete.");
   }
 
   if (parts.hour === 5 && parts.minute === 5) {
     return "start";
   }
 
+  // 奇數小時 :33 新增，奇數小時 :37 讀取
+  // 偶數小時 :33 更新，偶數小時 :37 刪除
   if (parts.minute === 33) {
-    return parts.hour % 2 === 1 ? "add" : "delete";
+    return parts.hour % 2 === 1 ? "add" : "update";
+  }
+
+  if (parts.minute === 37) {
+    return parts.hour % 2 === 1 ? "read" : "delete";
   }
 
   return "start";
@@ -64,7 +93,7 @@ async function createCronContentfulEntry(timestamp, parts) {
       name: field(`CronContentful ${parts.isoLike}`),
       targetUrl: field(runUrl),
       method: field("POST"),
-      schedule: field(parts.hour % 2 === 1 ? "odd hour :33 add" : "even hour :33 delete"),
+      schedule: field("odd hour :33 add"),
       contentType: field(CONTENT_TYPE),
       locale: field(locale),
       enabled: field(true),
@@ -81,6 +110,41 @@ async function createCronContentfulEntry(timestamp, parts) {
       "X-Contentful-Content-Type": CONTENT_TYPE
     },
     body
+  });
+}
+
+async function readLatestCronContentfulEntry() {
+  const response = await contentfulRequest(
+    `/entries?content_type=${CONTENT_TYPE}&order=${encodeURIComponent("-sys.createdAt")}&limit=1`
+  );
+  return response.items?.[0] || null;
+}
+
+async function findLatestCronContentfulEntry() {
+  const response = await contentfulRequest(
+    `/entries?content_type=${CONTENT_TYPE}&order=${encodeURIComponent("-sys.createdAt")}&limit=1`
+  );
+  return response.items?.[0] || null;
+}
+
+async function updateCronContentfulEntry(entry, timestamp, parts) {
+  const runUrl = getRunUrl();
+  const updatedFields = {
+    ...entry.fields,
+    schedule: field("even hour :33 update"),
+    lastStatus: field("updated"),
+    lastRunAt: field(timestamp.toISOString()),
+    lastSuccessAt: field(timestamp.toISOString()),
+    note: field(`Updated by GitHub Actions at ${parts.isoLike} ${TIME_ZONE}.`),
+    targetUrl: field(runUrl)
+  };
+
+  return contentfulRequest(`/entries/${entry.sys.id}`, {
+    method: "PUT",
+    headers: {
+      "X-Contentful-Version": String(entry.sys.version)
+    },
+    body: { fields: updatedFields }
   });
 }
 

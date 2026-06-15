@@ -4,10 +4,14 @@ on:
   schedule:
     # GitHub cron uses UTC. 21:05 UTC is 05:05 in Asia/Taipei.
     - cron: "5 21 * * *"
-    # Odd hours at :33 in Asia/Taipei, starting from 05:33 through 23:33.
-    - cron: "33 1,3,5,7,9,11,13,15,21,23 * * *"
-    # Even hours at :33 in Asia/Taipei, starting from 06:33 through 22:33.
-    - cron: "33 0,2,4,6,8,10,12,14,22 * * *"
+    # Odd hours at :33 in Asia/Taipei (add) — UTC odd hours: 01,03,07,09,11,13,15 → UTC-8 shift covers 17,19,23
+    - cron: "33 1,3,7,9,11,13,15,17,19,23 * * *"
+    # Odd hours at :37 in Asia/Taipei (read)
+    - cron: "37 1,3,7,9,11,13,15,17,19,23 * * *"
+    # Even hours at :33 in Asia/Taipei (update) — UTC even hours: 0,2,6,8,10,12,14,16,18,22
+    - cron: "33 0,2,6,8,10,12,14,16,18,22 * * *"
+    # Even hours at :37 in Asia/Taipei (delete)
+    - cron: "37 0,2,6,8,10,12,14,16,18,22 * * *"
   workflow_dispatch:
     inputs:
       action:
@@ -15,6 +19,8 @@ on:
         type: choice
         options:
           - add
+          - read
+          - update
           - delete
           - auto
           - start
