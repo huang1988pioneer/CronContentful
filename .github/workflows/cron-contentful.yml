@@ -1,0 +1,40 @@
+name: Cron Contentful
+
+on:
+  schedule:
+    # GitHub cron uses UTC. 21:05 UTC is 05:05 in Asia/Taipei.
+    - cron: "5 21 * * *"
+    # Odd hours at :33 in Asia/Taipei. UTC keeps the same odd/even parity.
+    - cron: "33 1-23/2 * * *"
+    # Even hours at :33 in Asia/Taipei. UTC keeps the same odd/even parity.
+    - cron: "33 0-22/2 * * *"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "auto, start, add, or delete"
+        required: false
+        default: "auto"
+
+jobs:
+  cron-contentful:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run CronContentful task
+        run: npm run cron
+        env:
+          CONTENTFUL_SPACE_ID: ${{ secrets.CONTENTFUL_SPACE_ID }}
+          CONTENTFUL_ENVIRONMENT_ID: ${{ secrets.CONTENTFUL_ENVIRONMENT_ID || 'master' }}
+          CONTENTFUL_MANAGEMENT_TOKEN: ${{ secrets.CONTENTFUL_MANAGEMENT_TOKEN }}
+          CONTENTFUL_LOCALE: ${{ secrets.CONTENTFUL_LOCALE || 'en-US' }}
+          CRON_TIME_ZONE: Asia/Taipei
+          CRON_ACTION: ${{ inputs.action || 'auto' }}
