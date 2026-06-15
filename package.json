@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "cron": "node scripts/cron-contentful.mjs"
+    "cron": "node scripts/cron-contentful.mjs",
+    "add": "node scripts/cron-contentful.mjs add"
   },
   "engines": {
     "node": ">=20"

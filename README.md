@@ -8,8 +8,10 @@ GitHub Actions workflow for the `croncontentful` Contentful table used by
 Times are interpreted in `Asia/Taipei`.
 
 - Every day at 05:05: start check, no Contentful entry is changed.
-- Odd hours at :33: create and publish one `croncontentful` entry.
-- Even hours at :33: delete the oldest `croncontentful` entry.
+- Odd hours at :33 from 05:33 through 23:33: create and publish one
+  `croncontentful` entry.
+- Even hours at :33 from 06:33 through 22:33: delete the oldest
+  `croncontentful` entry.
 
 GitHub Actions cron runs in UTC, so the workflow converts the runtime back to
 `Asia/Taipei` before deciding whether to add or delete.
@@ -26,3 +28,9 @@ Optional secrets:
 
 The target Contentful content type is `croncontentful`, matching the
 `Cron Contentful` table schema from `ContentfulFengBroAI`.
+
+## Manual Run
+
+Open the `Cron Contentful` GitHub Actions workflow and choose `Run workflow`.
+The default manual action is `add`, so running it without changing inputs
+creates and publishes one `croncontentful` entry.
