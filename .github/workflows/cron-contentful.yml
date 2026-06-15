@@ -11,9 +11,23 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: "auto, start, add, or delete"
+        description: "Choose a manual action"
+        type: choice
+        options:
+          - add
+          - delete
+          - auto
+          - start
         required: false
         default: "add"
+      delete_target:
+        description: "Entry to delete when action is delete"
+        type: choice
+        options:
+          - latest
+          - oldest
+        required: false
+        default: "latest"
 
 jobs:
   cron-contentful:
@@ -38,3 +52,4 @@ jobs:
           CONTENTFUL_LOCALE: ${{ secrets.CONTENTFUL_LOCALE || 'en-US' }}
           CRON_TIME_ZONE: Asia/Taipei
           CRON_ACTION: ${{ inputs.action || 'auto' }}
+          CRON_DELETE_TARGET: ${{ inputs.delete_target || 'latest' }}

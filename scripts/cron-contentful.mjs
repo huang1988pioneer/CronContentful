@@ -8,6 +8,7 @@ const managementToken = requireEnv("CONTENTFUL_MANAGEMENT_TOKEN");
 const environmentId = process.env.CONTENTFUL_ENVIRONMENT_ID || DEFAULT_ENVIRONMENT_ID;
 const locale = process.env.CONTENTFUL_LOCALE || DEFAULT_LOCALE;
 const requestedAction = process.env.CRON_ACTION || process.argv[2] || "auto";
+const deleteTarget = process.env.CRON_DELETE_TARGET || "latest";
 
 const now = new Date();
 const localParts = getLocalParts(now, TIME_ZONE);
@@ -24,13 +25,13 @@ if (action === "start") {
   await publishEntry(entry);
   console.log(`Created and published ${CONTENT_TYPE} entry: ${entry.sys.id}`);
 } else if (action === "delete") {
-  const entry = await findOldestCronContentfulEntry();
+  const entry = await findCronContentfulEntryToDelete(deleteTarget);
 
   if (!entry) {
     console.log(`No ${CONTENT_TYPE} entries found. Nothing to delete.`);
   } else {
     await deleteEntry(entry);
-    console.log(`Deleted ${CONTENT_TYPE} entry: ${entry.sys.id}`);
+    console.log(`Deleted ${deleteTarget} ${CONTENT_TYPE} entry: ${entry.sys.id}`);
   }
 } else {
   throw new Error(`Unsupported CRON_ACTION: ${action}`);
@@ -83,9 +84,14 @@ async function createCronContentfulEntry(timestamp, parts) {
   });
 }
 
-async function findOldestCronContentfulEntry() {
+async function findCronContentfulEntryToDelete(target) {
+  if (!["latest", "oldest"].includes(target)) {
+    throw new Error("CRON_DELETE_TARGET must be latest or oldest.");
+  }
+
+  const order = target === "latest" ? "-sys.createdAt" : "sys.createdAt";
   const response = await contentfulRequest(
-    `/entries?content_type=${CONTENT_TYPE}&order=sys.createdAt&limit=1`
+    `/entries?content_type=${CONTENT_TYPE}&order=${encodeURIComponent(order)}&limit=1`
   );
   return response.items?.[0] || null;
 }
